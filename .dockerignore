@@ -2,7 +2,7 @@
 .gitignore
 .github
 venv
-env
+.venv
 __pycache__
 *.pyc
 *.pyo
@@ -12,5 +12,3 @@ __pycache__
 .env
 .env.local
 node_modules
-*.md
-.git
