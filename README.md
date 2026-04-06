@@ -217,3 +217,14 @@ The validator checks `/health` and endpoint/schema compatibility against `openen
 
 `*` Provide at least one of `OPENAI_API_KEY` or `HF_TOKEN`.
 
+
+---
+title: Cree Sre
+emoji: 🏆
+colorFrom: red
+colorTo: pink
+sdk: docker
+pinned: false
+---
+
+Check out the configuration reference at https://huggingface.co/docs/hub/spaces-config-reference
