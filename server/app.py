@@ -80,6 +80,13 @@ def _obs_dict(obs) -> dict:
 # Endpoints
 # ---------------------------------------------------------------------------
 
+@app.get("/")
+def root():
+    return {
+        "status": "ok",
+        "message": "CREE server is running"
+    }
+
 @app.post("/reset")
 def reset(request: ResetRequest = ResetRequest()):
     obs = env.reset(task_id=request.task)
