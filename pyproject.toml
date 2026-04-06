@@ -1,0 +1,23 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "cree"
+version = "0.1.0"
+description = "CREE - Causal Reverse Engineering Engine"
+readme = "README.md"
+requires-python = ">=3.10"
+dependencies = [
+  "openenv-core>=0.2.0",
+  "fastapi",
+  "uvicorn",
+  "pydantic"
+]
+
+[project.scripts]
+server = "server.app:main"
+
+[tool.setuptools]
+packages = ["agent", "client", "env", "server", "tasks"]
+py-modules = ["models", "inference", "demo"]
