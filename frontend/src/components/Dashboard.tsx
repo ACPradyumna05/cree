@@ -23,6 +23,7 @@ const Dashboard: React.FC<DashboardProps> = ({ initialSessionId = null, onResetT
   const [stepCount, setStepCount] = useState(0);
   const [totalReward, setTotalReward] = useState(0);
   const [episodeDone, setEpisodeDone] = useState(false);
+  const [gradeResult, setGradeResult] = useState<Record<string, any> | null>(null);
 
   // Project/Session state
   const [sessionId, setSessionId] = useState<string | null>(initialSessionId);
@@ -117,6 +118,7 @@ const Dashboard: React.FC<DashboardProps> = ({ initialSessionId = null, onResetT
       setStepCount(0);
       setTotalReward(0);
       setEpisodeDone(false);
+      setGradeResult(null);
       setError(null);
       await loadProjects();
     } catch (err) {
@@ -131,6 +133,7 @@ const Dashboard: React.FC<DashboardProps> = ({ initialSessionId = null, onResetT
     setStepCount(0);
     setTotalReward(0);
     setEpisodeDone(false);
+    setGradeResult(null);
     setShowProjectList(false);
     setError(null);
 
@@ -169,6 +172,7 @@ const Dashboard: React.FC<DashboardProps> = ({ initialSessionId = null, onResetT
       setStepCount(0);
       setTotalReward(0);
       setEpisodeDone(false);
+      setGradeResult(null);
     } catch (err) {
       setError(`Reset failed: ${err instanceof Error ? err.message : 'Unknown error'}`);
     } finally {
@@ -185,14 +189,18 @@ const Dashboard: React.FC<DashboardProps> = ({ initialSessionId = null, onResetT
         const result: StepResult = sessionId
           ? await client.projectStep(sessionId, action)
           : await client.step(action);
-        setState(result.state);
+        const nextState = result.state || result.observation;
+        if (!nextState) {
+          throw new Error('No state returned from step response');
+        }
+        setState(nextState);
 
         // Add to history
         const entry: HistoryEntry = {
           step: stepCount + 1,
           action,
           timestamp: Date.now(),
-          state: result.state,
+          state: nextState,
           reward: result.reward,
           done: result.done,
         };
@@ -219,13 +227,63 @@ const Dashboard: React.FC<DashboardProps> = ({ initialSessionId = null, onResetT
       const result = sessionId
         ? await client.projectGrade(sessionId)
         : await client.grade();
-      alert(`Grading result:\n${JSON.stringify(result, null, 2)}`);
+      setGradeResult(result);
     } catch (err) {
       setError(`Grading failed: ${err instanceof Error ? err.message : 'Unknown error'}`);
     } finally {
       setLoading(null);
     }
   }, [client, sessionId]);
+
+  const formatGradeLabel = (key: string): string =>
+    key
+      .replace(/_/g, ' ')
+      .replace(/([a-z])([A-Z])/g, '$1 $2')
+      .replace(/\b\w/g, (c) => c.toUpperCase());
+
+  const formatGradeValue = (value: unknown): string => {
+    if (typeof value === 'number') return Number.isInteger(value) ? `${value}` : value.toFixed(3);
+    if (typeof value === 'boolean') return value ? 'Yes' : 'No';
+    if (value === null || value === undefined) return 'N/A';
+    return String(value);
+  };
+
+  const renderGradeRows = (data: Record<string, any>) => {
+    return Object.entries(data).map(([key, value]) => {
+      const label = formatGradeLabel(key);
+
+      if (value && typeof value === 'object' && !Array.isArray(value)) {
+        const nested = value as Record<string, unknown>;
+        return (
+          <div key={key} style={styles.gradeGroup}>
+            <div style={styles.gradeGroupTitle}>{label}</div>
+            {Object.entries(nested).map(([nestedKey, nestedValue]) => (
+              <div key={`${key}-${nestedKey}`} style={styles.gradeRow}>
+                <span style={styles.gradeKey}>{formatGradeLabel(nestedKey)}</span>
+                <span style={styles.gradeValue}>{formatGradeValue(nestedValue)}</span>
+              </div>
+            ))}
+          </div>
+        );
+      }
+
+      if (Array.isArray(value)) {
+        return (
+          <div key={key} style={styles.gradeRow}>
+            <span style={styles.gradeKey}>{label}</span>
+            <span style={styles.gradeValue}>{value.map((v) => formatGradeValue(v)).join(', ') || 'N/A'}</span>
+          </div>
+        );
+      }
+
+      return (
+        <div key={key} style={styles.gradeRow}>
+          <span style={styles.gradeKey}>{label}</span>
+          <span style={styles.gradeValue}>{formatGradeValue(value)}</span>
+        </div>
+      );
+    });
+  };
 
   return (
     <div style={styles.dashboard}>
@@ -236,9 +294,9 @@ const Dashboard: React.FC<DashboardProps> = ({ initialSessionId = null, onResetT
             <p style={styles.subtitle}>Causal Reverse Engineering Engine</p>
           </div>
           <div style={styles.headerStatus}>
-            <div style={{ ...styles.statusDot, backgroundColor: connected ? '#10b981' : '#ef4444' }} />
+            <div style={{ ...styles.statusDot, backgroundColor: connected ? '#5da8dd' : '#9f4f61' }} />
             <span>{connected ? 'API Connected' : 'API Disconnected'}</span>
-            <div style={{ ...styles.statusDot, backgroundColor: wsStatus === 'connected' ? '#10b981' : wsStatus === 'connecting' ? '#f59e0b' : '#ef4444' }} />
+            <div style={{ ...styles.statusDot, backgroundColor: wsStatus === 'connected' ? '#5da8dd' : wsStatus === 'connecting' ? '#8e7fb7' : '#9f4f61' }} />
             <span>WS {wsStatus}</span>
           </div>
         </div>
@@ -249,21 +307,21 @@ const Dashboard: React.FC<DashboardProps> = ({ initialSessionId = null, onResetT
             onClick={() => setShowProjectList(!showProjectList)}
             style={{...styles.btn, ...styles.btnSmall, ...styles.btnSecondary}}
           >
-            📋 Projects ({projects.length})
+            Projects ({projects.length})
           </button>
           <button
             onClick={handleCreateProject}
             disabled={!connected || loading !== null}
             style={{...styles.btn, ...styles.btnSmall, ...styles.btnPrimary, ...(!connected || loading !== null ? styles.btnDisabled : {})}}
           >
-            ➕ New Project
+            New Project
           </button>
           {onResetToIncident && (
             <button
               onClick={onResetToIncident}
               style={{...styles.btn, ...styles.btnSmall, ...styles.btnSecondary}}
             >
-              🔄 Back to Incident Analysis
+              Back to Incident Analysis
             </button>
           )}
           {sessionId && (
@@ -371,7 +429,7 @@ const Dashboard: React.FC<DashboardProps> = ({ initialSessionId = null, onResetT
               </div>
               <div style={styles.statBox}>
                 <div style={styles.statLabel}>Reward</div>
-                <div style={{ ...styles.statValue, color: totalReward >= 0 ? '#10b981' : '#ef4444' }}>
+                <div style={{ ...styles.statValue, color: totalReward >= 0 ? '#86bfd8' : '#b87083' }}>
                   {totalReward.toFixed(2)}
                 </div>
               </div>
@@ -379,13 +437,28 @@ const Dashboard: React.FC<DashboardProps> = ({ initialSessionId = null, onResetT
                 <div style={styles.statLabel}>Status</div>
                 <div style={{
                   ...styles.statValue,
-                  color: episodeDone ? '#ef4444' : '#10b981'
+                  color: episodeDone ? '#b87083' : '#86bfd8'
                 }}>
                   {episodeDone ? 'ENDED' : 'ACTIVE'}
                 </div>
               </div>
             </div>
           </div>
+
+          {gradeResult && (
+            <div style={{ ...styles.section, ...styles.gradePanel }}>
+              <div style={styles.gradeHeader}>
+                <h2 style={{ ...styles.sectionTitle, margin: 0 }}>Grading Result</h2>
+                <button
+                  onClick={() => setGradeResult(null)}
+                  style={{ ...styles.btn, ...styles.btnSmall, ...styles.btnSecondary }}
+                >
+                  Clear
+                </button>
+              </div>
+              <div style={styles.gradeBody}>{renderGradeRows(gradeResult)}</div>
+            </div>
+          )}
         </div>
 
         {/* Right side - Main content */}
@@ -407,6 +480,7 @@ const Dashboard: React.FC<DashboardProps> = ({ initialSessionId = null, onResetT
           <div style={styles.section}>
             <HistoryLog entries={history} />
           </div>
+
         </div>
       </div>
     </div>
@@ -416,15 +490,17 @@ const Dashboard: React.FC<DashboardProps> = ({ initialSessionId = null, onResetT
 const styles: Record<string, React.CSSProperties> = {
   dashboard: {
     minHeight: '100vh',
-    backgroundColor: '#111827',
+    backgroundColor: 'transparent',
     color: '#e5e7eb',
     fontFamily:
-      '-apple-system, BlinkMacSystemFont, "Segoe UI", "Roboto", "Oxygen", "Ubuntu", "Cantarell", sans-serif',
+      '"Trebuchet MS", "Segoe UI", "Roboto", "Oxygen", "Ubuntu", "Cantarell", sans-serif',
   },
   header: {
-    backgroundColor: '#1f2937',
-    borderBottom: '2px solid #374151',
+    background: 'linear-gradient(165deg, rgba(13, 21, 39, 0.92), rgba(8, 15, 31, 0.9))',
+    borderBottom: '1px solid rgba(96, 145, 194, 0.24)',
     padding: '24px 32px',
+    backdropFilter: 'blur(6px)',
+    boxShadow: '0 0 0 1px rgba(88, 136, 186, 0.08), 0 16px 34px rgba(3, 7, 18, 0.62)',
   },
   headerTop: {
     display: 'flex',
@@ -436,12 +512,13 @@ const styles: Record<string, React.CSSProperties> = {
     margin: 0,
     fontSize: '32px',
     fontWeight: 'bold',
-    color: '#06b6d4',
+    color: '#9ec8f0',
+    textShadow: '0 0 12px rgba(93, 157, 214, 0.22)',
   },
   subtitle: {
     margin: '4px 0 12px 0',
     fontSize: '14px',
-    color: '#9ca3af',
+    color: '#8ea6c1',
   },
   headerStatus: {
     display: 'flex',
@@ -471,13 +548,13 @@ const styles: Record<string, React.CSSProperties> = {
   currentSession: {
     fontSize: '12px',
     padding: '4px 8px',
-    backgroundColor: '#111827',
+    backgroundColor: 'rgba(8, 15, 30, 0.82)',
     borderRadius: '4px',
-    border: '1px solid #374151',
+    border: '1px solid rgba(94, 138, 188, 0.28)',
   },
   code: {
     fontFamily: 'monospace',
-    color: '#06b6d4',
+    color: '#9dc4e8',
     marginLeft: '4px',
   },
   modal: {
@@ -493,25 +570,26 @@ const styles: Record<string, React.CSSProperties> = {
     zIndex: 1000,
   },
   modalContent: {
-    backgroundColor: '#1f2937',
+    background: 'linear-gradient(165deg, rgba(13, 21, 39, 0.96), rgba(8, 15, 31, 0.95))',
     borderRadius: '8px',
-    border: '1px solid #374151',
+    border: '1px solid rgba(97, 150, 208, 0.24)',
     maxWidth: '600px',
     width: '90%',
     maxHeight: '80vh',
     overflow: 'auto',
+    boxShadow: '0 22px 52px rgba(3, 7, 18, 0.74)',
   },
   modalHeader: {
     display: 'flex',
     justifyContent: 'space-between',
     alignItems: 'center',
     padding: '16px 20px',
-    borderBottom: '1px solid #374151',
+    borderBottom: '1px solid rgba(82, 120, 160, 0.28)',
   },
   closeBtn: {
     background: 'none',
     border: 'none',
-    color: '#9ca3af',
+    color: '#8aa4c0',
     fontSize: '20px',
     cursor: 'pointer',
     padding: 0,
@@ -525,15 +603,16 @@ const styles: Record<string, React.CSSProperties> = {
     alignItems: 'center',
     padding: '12px',
     marginBottom: '8px',
-    backgroundColor: '#111827',
+    backgroundColor: 'rgba(7, 15, 30, 0.88)',
     borderRadius: '6px',
-    border: '1px solid #374151',
+    border: '1px solid rgba(94, 138, 188, 0.28)',
     cursor: 'pointer',
     transition: 'all 0.2s ease',
   },
   projectItemActive: {
-    backgroundColor: '#1e3a8a',
-    borderColor: '#06b6d4',
+    backgroundColor: 'rgba(23, 39, 74, 0.72)',
+    borderColor: '#8eafd4',
+    boxShadow: '0 0 0 1px rgba(124, 165, 209, 0.18), 0 0 14px rgba(80, 110, 148, 0.2)',
   },
   projectItemInfo: {
     flex: 1,
@@ -541,12 +620,12 @@ const styles: Record<string, React.CSSProperties> = {
   projectItemId: {
     fontFamily: 'monospace',
     fontSize: '12px',
-    color: '#06b6d4',
+    color: '#9ec1e6',
     marginBottom: '4px',
   },
   projectItemMeta: {
     fontSize: '11px',
-    color: '#9ca3af',
+    color: '#8ea6c1',
   },
   deleteBtn: {
     background: 'none',
@@ -557,21 +636,21 @@ const styles: Record<string, React.CSSProperties> = {
   },
   emptyText: {
     textAlign: 'center' as const,
-    color: '#9ca3af',
+    color: '#8ea6c1',
     padding: '20px',
     margin: 0,
   },
   errorBanner: {
     padding: '12px 32px',
-    backgroundColor: '#7f1d1d',
-    color: '#fca5a5',
-    borderBottom: '1px solid #991b1b',
+    backgroundColor: 'rgba(97, 37, 53, 0.86)',
+    color: '#e2b7c0',
+    borderBottom: '1px solid rgba(142, 72, 91, 0.8)',
     fontSize: '14px',
   },
   main: {
     display: 'grid',
     gridTemplateColumns: '300px 1fr',
-    gap: '24px',
+    gap: '18px',
     padding: '24px 32px',
     maxWidth: '1600px',
     margin: '0 auto',
@@ -588,22 +667,72 @@ const styles: Record<string, React.CSSProperties> = {
   },
   section: {
     padding: '20px',
-    backgroundColor: '#1f2937',
+    background: 'linear-gradient(165deg, rgba(13, 21, 39, 0.9), rgba(8, 15, 31, 0.9))',
+    backdropFilter: 'blur(6px)',
     borderRadius: '8px',
-    border: '1px solid #374151',
+    border: '1px solid rgba(97, 150, 208, 0.22)',
+    boxShadow: '0 0 0 1px rgba(88, 136, 186, 0.08), 0 14px 30px rgba(3, 7, 18, 0.6)',
   },
   sectionTitle: {
     margin: '0 0 16px 0',
     fontSize: '14px',
     fontWeight: 'bold',
-    color: '#d1d5db',
+    color: '#b2c3d8',
+  },
+  gradeHeader: {
+    display: 'flex',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: '10px',
+    gap: '10px',
+  },
+  gradePanel: {
+    minHeight: '260px',
+  },
+  gradeBody: {
+    maxHeight: '360px',
+    overflowY: 'auto',
+    padding: '10px',
+    borderRadius: '8px',
+    backgroundColor: 'rgba(4, 14, 32, 0.94)',
+    border: '1px solid rgba(91, 139, 190, 0.35)',
+  },
+  gradeGroup: {
+    marginBottom: '12px',
+    paddingBottom: '10px',
+    borderBottom: '1px solid rgba(86, 122, 160, 0.25)',
+  },
+  gradeGroupTitle: {
+    fontSize: '12px',
+    color: '#9ec1e6',
+    fontWeight: 700,
+    marginBottom: '8px',
+    letterSpacing: '0.04em',
+    textTransform: 'uppercase',
+  },
+  gradeRow: {
+    display: 'flex',
+    justifyContent: 'space-between',
+    gap: '10px',
+    padding: '6px 0',
+    borderBottom: '1px dashed rgba(82, 116, 154, 0.2)',
+  },
+  gradeKey: {
+    color: '#8ea6c1',
+    fontSize: '12px',
+  },
+  gradeValue: {
+    color: '#c8d8ea',
+    fontSize: '12px',
+    fontWeight: 600,
+    textAlign: 'right',
   },
   select: {
     width: '100%',
     padding: '8px 12px',
-    backgroundColor: '#111827',
-    color: '#e5e7eb',
-    border: '1px solid #374151',
+    backgroundColor: 'rgba(4, 14, 32, 0.94)',
+    color: '#c8d8ea',
+    border: '1px solid rgba(91, 139, 190, 0.35)',
     borderRadius: '6px',
     fontSize: '14px',
     cursor: 'pointer',
@@ -626,12 +755,15 @@ const styles: Record<string, React.CSSProperties> = {
     marginBottom: 0,
   },
   btnPrimary: {
-    backgroundColor: '#6366f1',
-    color: '#ffffff',
+    background: 'linear-gradient(135deg, #253b77, #352f67)',
+    color: '#c8d7e8',
+    border: '1px solid rgba(92, 133, 183, 0.4)',
+    boxShadow: 'inset 0 0 12px rgba(129, 173, 222, 0.12), 0 0 14px rgba(53, 78, 141, 0.25)',
   },
   btnSecondary: {
-    backgroundColor: '#374151',
-    color: '#d1d5db',
+    backgroundColor: 'rgba(36, 49, 74, 0.82)',
+    color: '#c7d8ed',
+    border: '1px solid rgba(94, 138, 188, 0.3)',
   },
   btnDisabled: {
     opacity: 0.5,
@@ -643,20 +775,20 @@ const styles: Record<string, React.CSSProperties> = {
     gap: '12px',
   },
   statBox: {
-    backgroundColor: '#111827',
+    backgroundColor: 'rgba(7, 15, 30, 0.86)',
     padding: '12px',
     borderRadius: '6px',
-    border: '1px solid #374151',
+    border: '1px solid rgba(94, 138, 188, 0.28)',
   },
   statLabel: {
-    color: '#6b7280',
+    color: '#7f95ae',
     fontSize: '12px',
     marginBottom: '4px',
   },
   statValue: {
     fontSize: '20px',
     fontWeight: 'bold',
-    color: '#10b981',
+    color: '#86bfd8',
   },
 };
 

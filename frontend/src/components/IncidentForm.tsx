@@ -37,12 +37,18 @@ const IncidentForm: React.FC<IncidentFormProps> = ({ client, onIncidentCreated, 
   return (
     <div style={styles.container}>
       <div style={styles.card}>
+        <div style={styles.eyebrow}>Scenario Intake</div>
         <h2 style={styles.title}>Incident Report Analyzer</h2>
         <p style={styles.description}>
           Paste your incident report or system log below. We'll analyze it and create an interactive scenario to help you practice incident response.
         </p>
 
         <form onSubmit={handleSubmit} style={styles.form}>
+          <div style={styles.formMetaRow}>
+            <span style={styles.formHint}>Include latency, error rate, CPU, and cascade symptoms.</span>
+            <span style={styles.charCount}>{incidentText.trim().length} chars</span>
+          </div>
+
           <textarea
             value={incidentText}
             onChange={(e) => setIncidentText(e.target.value)}
@@ -63,33 +69,36 @@ const IncidentForm: React.FC<IncidentFormProps> = ({ client, onIncidentCreated, 
               ...(disabled || loading || !incidentText.trim() ? styles.buttonDisabled : {}),
             }}
           >
-            {loading ? 'Analyzing...' : 'Analyze Incident'}
+            {loading ? 'Analyzing Report...' : 'Generate Training Scenario'}
           </button>
         </form>
 
         <div style={styles.examplesSection}>
-          <h3 style={styles.examplesTitle}>Example incident reports:</h3>
+          <h3 style={styles.examplesTitle}>Use a quick template</h3>
           <div style={styles.examplesList}>
             <button
               type="button"
               onClick={() => setIncidentText('Production alert: Payment service latency increased from 100ms to 2000ms. Error rate went from 0.1% to 5%. Throughput dropped by 60%. Database CPU at 95%.')}
               style={styles.exampleButton}
             >
-              High Latency + DB Overload
+              <span style={styles.exampleTitle}>High Latency + DB Overload</span>
+              <span style={styles.exampleDesc}>Traffic slowdown, rising errors, saturated database.</span>
             </button>
             <button
               type="button"
               onClick={() => setIncidentText('CRITICAL: Cascading failure detected. API Gateway started returning 503s. Load balanced to 5 instances but all hit resource limits. Heartbeat checks failing. All downstream services affected.')}
               style={styles.exampleButton}
             >
-              Cascading Failure
+              <span style={styles.exampleTitle}>Cascading Failure</span>
+              <span style={styles.exampleDesc}>Service chain collapse triggered by upstream failure.</span>
             </button>
             <button
               type="button"
               onClick={() => setIncidentText('Memory leak suspected. App instances restarting automatically. Requests queuing up. Error rate at 8%. Metrics show memory usage at 98% capacity.')}
               style={styles.exampleButton}
             >
-              Memory Leak + Restart Loop
+              <span style={styles.exampleTitle}>Memory Leak + Restart Loop</span>
+              <span style={styles.exampleDesc}>Resource exhaustion with repeated restarts under load.</span>
             </button>
           </div>
         </div>
@@ -101,42 +110,77 @@ const IncidentForm: React.FC<IncidentFormProps> = ({ client, onIncidentCreated, 
 const styles: Record<string, React.CSSProperties> = {
   container: {
     padding: '24px',
-    backgroundColor: '#111827',
+    backgroundColor: 'transparent',
     minHeight: '100vh',
-    fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", "Roboto", sans-serif',
+    fontFamily: '"Trebuchet MS", "Segoe UI", "Roboto", sans-serif',
   },
   card: {
-    maxWidth: '700px',
+    maxWidth: '760px',
     margin: '0 auto',
-    padding: '32px',
-    backgroundColor: '#1f2937',
-    borderRadius: '12px',
-    border: '1px solid #374151',
-    boxShadow: '0 10px 30px rgba(0, 0, 0, 0.3)',
+    padding: '34px',
+    background: 'linear-gradient(165deg, rgba(13, 21, 39, 0.9), rgba(8, 15, 31, 0.92))',
+    backdropFilter: 'blur(6px)',
+    borderRadius: '16px',
+    border: '1px solid rgba(97, 150, 208, 0.25)',
+    boxShadow: '0 0 0 1px rgba(91, 140, 192, 0.1), 0 22px 52px rgba(3, 7, 18, 0.74), inset 0 1px 0 rgba(106, 170, 235, 0.12)',
+  },
+  eyebrow: {
+    display: 'inline-block',
+    padding: '4px 10px',
+    borderRadius: '999px',
+    fontSize: '11px',
+    fontWeight: 700,
+    letterSpacing: '0.08em',
+    textTransform: 'uppercase',
+    color: '#9dc4e8',
+    backgroundColor: 'rgba(26, 58, 96, 0.35)',
+    border: '1px solid rgba(106, 152, 205, 0.3)',
+    marginBottom: '10px',
   },
   title: {
-    margin: '0 0 12px 0',
-    fontSize: '28px',
+    margin: '0 0 10px 0',
+    fontSize: '34px',
     fontWeight: 'bold',
-    color: '#06b6d4',
+    letterSpacing: '0.01em',
+    color: '#9cc9f1',
+    textShadow: '0 0 12px rgba(93, 157, 214, 0.22)',
   },
   description: {
-    margin: '0 0 24px 0',
-    fontSize: '14px',
-    color: '#d1d5db',
+    margin: '0 0 22px 0',
+    fontSize: '15px',
+    color: '#a9bbd3',
     lineHeight: '1.6',
+    maxWidth: '62ch',
   },
   form: {
     marginBottom: '24px',
   },
+  formMetaRow: {
+    display: 'flex',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: '10px',
+    gap: '12px',
+  },
+  formHint: {
+    color: '#8ea7c6',
+    fontSize: '12px',
+    letterSpacing: '0.02em',
+  },
+  charCount: {
+    color: '#6d98c2',
+    fontSize: '12px',
+    fontFamily: 'monospace',
+    whiteSpace: 'nowrap' as const,
+  },
   textarea: {
     width: '100%',
-    padding: '12px',
-    backgroundColor: '#111827',
-    color: '#e5e7eb',
-    border: '1px solid #374151',
-    borderRadius: '8px',
-    fontSize: '13px',
+    padding: '14px',
+    backgroundColor: 'rgba(4, 14, 32, 0.94)',
+    color: '#c8d8ea',
+    border: '1px solid rgba(91, 139, 190, 0.35)',
+    borderRadius: '10px',
+    fontSize: '14px',
     fontFamily: 'monospace',
     lineHeight: '1.5',
     boxSizing: 'border-box',
@@ -154,48 +198,64 @@ const styles: Record<string, React.CSSProperties> = {
   },
   button: {
     width: '100%',
-    padding: '12px 16px',
-    border: 'none',
-    borderRadius: '8px',
+    padding: '13px 16px',
+    borderRadius: '10px',
     fontSize: '14px',
     fontWeight: '600',
     cursor: 'pointer',
     transition: 'all 0.2s ease',
+    letterSpacing: '0.02em',
   },
   buttonPrimary: {
-    backgroundColor: '#6366f1',
-    color: '#ffffff',
+    background: 'linear-gradient(135deg, #253b77, #352f67)',
+    color: '#c8d7e8',
+    border: '1px solid rgba(92, 133, 183, 0.4)',
+    boxShadow: 'inset 0 0 12px rgba(129, 173, 222, 0.12), 0 0 14px rgba(53, 78, 141, 0.25)',
   },
   buttonDisabled: {
     opacity: 0.5,
     cursor: 'not-allowed',
   },
   examplesSection: {
-    marginTop: '24px',
-    paddingTop: '24px',
-    borderTop: '1px solid #374151',
+    marginTop: '22px',
+    paddingTop: '20px',
+    borderTop: '1px solid rgba(90, 128, 170, 0.26)',
   },
   examplesTitle: {
-    margin: '0 0 12px 0',
+    margin: '0 0 14px 0',
     fontSize: '13px',
     fontWeight: '600',
-    color: '#9ca3af',
+    color: '#8da6c2',
     textTransform: 'uppercase',
+    letterSpacing: '0.08em',
   },
   examplesList: {
     display: 'grid',
-    gap: '8px',
+    gap: '10px',
   },
   exampleButton: {
-    padding: '10px 12px',
-    backgroundColor: '#374151',
-    color: '#d1d5db',
-    border: '1px solid #4b5563',
-    borderRadius: '6px',
+    display: 'flex',
+    flexDirection: 'column',
+    gap: '4px',
+    padding: '11px 13px',
+    backgroundColor: 'rgba(36, 49, 74, 0.82)',
+    color: '#c7d8ed',
+    border: '1px solid rgba(94, 138, 188, 0.3)',
+    borderRadius: '8px',
     fontSize: '12px',
     cursor: 'pointer',
     transition: 'all 0.2s ease',
     textAlign: 'left' as const,
+  },
+  exampleTitle: {
+    fontSize: '13px',
+    fontWeight: 700,
+    color: '#ccdef2',
+  },
+  exampleDesc: {
+    fontSize: '11px',
+    color: '#89a3c0',
+    lineHeight: 1.4,
   },
 };
 

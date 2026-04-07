@@ -10,7 +10,7 @@
 
 button:hover:not(:disabled) {
   transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+  box-shadow: 0 0 0 1px rgba(98, 237, 255, 0.45), 0 0 16px rgba(98, 237, 255, 0.35), 0 8px 24px rgba(5, 9, 22, 0.55);
 }
 
 select:hover {
@@ -19,6 +19,12 @@ select:hover {
 
 select:focus {
   outline: none;
-  border-color: #6366f1;
-  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
+  border-color: #45d4ff;
+  box-shadow: 0 0 0 3px rgba(69, 212, 255, 0.18);
+}
+
+textarea:focus {
+  outline: none;
+  border-color: #45d4ff !important;
+  box-shadow: 0 0 0 3px rgba(69, 212, 255, 0.16);
 }

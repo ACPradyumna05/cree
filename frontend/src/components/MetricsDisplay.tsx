@@ -15,10 +15,10 @@ const MetricsDisplay: React.FC<MetricsDisplayProps> = ({ state }) => {
   }
 
   const statusColors: Record<string, string> = {
-    normal: '#10b981',
-    warning: '#f59e0b',
-    critical: '#ef4444',
-    recovering: '#06b6d4',
+    normal: '#86bfd8',
+    warning: '#8e7fb7',
+    critical: '#b87083',
+    recovering: '#9ec1e6',
   };
 
   const renderMetricBar = (label: string, value: number, max: number, unit: string = '') => {
@@ -31,7 +31,7 @@ const MetricsDisplay: React.FC<MetricsDisplayProps> = ({ state }) => {
             style={{
               ...styles.barFill,
               width: `${percentage}%`,
-              backgroundColor: percentage > 80 ? '#ef4444' : percentage > 50 ? '#f59e0b' : '#10b981',
+              backgroundColor: percentage > 80 ? '#b87083' : percentage > 50 ? '#8e7fb7' : '#86bfd8',
             }}
           />
         </div>
@@ -86,9 +86,11 @@ const MetricsDisplay: React.FC<MetricsDisplayProps> = ({ state }) => {
 const styles: Record<string, React.CSSProperties> = {
   container: {
     padding: '20px',
-    backgroundColor: '#1f2937',
+    background: 'linear-gradient(165deg, rgba(13, 21, 39, 0.9), rgba(8, 15, 31, 0.9))',
+    backdropFilter: 'blur(6px)',
     borderRadius: '8px',
-    border: '1px solid #374151',
+    border: '1px solid rgba(97, 150, 208, 0.22)',
+    boxShadow: '0 0 0 1px rgba(88, 136, 186, 0.08), 0 14px 30px rgba(3, 7, 18, 0.6)',
   },
   placeholder: {
     color: '#9ca3af',
@@ -108,9 +110,10 @@ const styles: Record<string, React.CSSProperties> = {
     animation: 'pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite',
   },
   statusText: {
-    color: '#e5e7eb',
+    color: '#b2c3d8',
     fontWeight: '600',
     fontSize: '14px',
+    textShadow: '0 0 10px rgba(93, 157, 214, 0.2)',
   },
   metricsGrid: {
     display: 'grid',
@@ -131,7 +134,7 @@ const styles: Record<string, React.CSSProperties> = {
   barContainer: {
     flex: 1,
     height: '6px',
-    backgroundColor: '#374151',
+    backgroundColor: 'rgba(56, 68, 90, 0.85)',
     borderRadius: '3px',
     overflow: 'hidden',
   },
@@ -153,10 +156,10 @@ const styles: Record<string, React.CSSProperties> = {
     gap: '12px',
   },
   detailCard: {
-    backgroundColor: '#111827',
+    backgroundColor: 'rgba(7, 15, 30, 0.86)',
     padding: '12px',
     borderRadius: '6px',
-    border: '1px solid #374151',
+    border: '1px solid rgba(94, 138, 188, 0.28)',
   },
   detailLabel: {
     color: '#9ca3af',
@@ -164,9 +167,10 @@ const styles: Record<string, React.CSSProperties> = {
     marginBottom: '4px',
   },
   detailValue: {
-    color: '#10b981',
+    color: '#9ec1e6',
     fontSize: '18px',
     fontWeight: 'bold',
+    textShadow: '0 0 10px rgba(93, 157, 214, 0.2)',
   },
 };
 

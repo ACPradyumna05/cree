@@ -8,10 +8,10 @@ interface HistoryLogProps {
 
 const HistoryLog: React.FC<HistoryLogProps> = ({ entries, maxHeight = '400px' }) => {
   const statusColors: Record<string, string> = {
-    normal: '#10b981',
-    warning: '#f59e0b',
-    critical: '#ef4444',
-    recovering: '#06b6d4',
+    normal: '#86bfd8',
+    warning: '#8e7fb7',
+    critical: '#b87083',
+    recovering: '#9ec1e6',
   };
 
   return (
@@ -54,7 +54,7 @@ const HistoryLog: React.FC<HistoryLogProps> = ({ entries, maxHeight = '400px' })
                       <span
                         style={{
                           ...styles.metricValue,
-                          color: entry.reward >= 0 ? '#10b981' : '#ef4444',
+                          color: entry.reward >= 0 ? '#86bfd8' : '#b87083',
                         }}
                       >
                         {entry.reward.toFixed(2)}
@@ -98,9 +98,11 @@ const HistoryLog: React.FC<HistoryLogProps> = ({ entries, maxHeight = '400px' })
 const styles: Record<string, React.CSSProperties> = {
   container: {
     padding: '20px',
-    backgroundColor: '#1f2937',
+    background: 'linear-gradient(165deg, rgba(13, 21, 39, 0.9), rgba(8, 15, 31, 0.9))',
+    backdropFilter: 'blur(6px)',
     borderRadius: '8px',
-    border: '1px solid #374151',
+    border: '1px solid rgba(97, 150, 208, 0.22)',
+    boxShadow: '0 0 0 1px rgba(88, 136, 186, 0.08), 0 14px 30px rgba(3, 7, 18, 0.6)',
   },
   title: {
     color: '#e5e7eb',
@@ -121,9 +123,9 @@ const styles: Record<string, React.CSSProperties> = {
   },
   logEntry: {
     padding: '12px',
-    backgroundColor: '#111827',
+    backgroundColor: 'rgba(7, 15, 30, 0.86)',
     borderRadius: '6px',
-    border: '1px solid #374151',
+    border: '1px solid rgba(94, 138, 188, 0.28)',
   },
   logHeader: {
     display: 'flex',
@@ -131,7 +133,7 @@ const styles: Record<string, React.CSSProperties> = {
     marginBottom: '8px',
   },
   step: {
-    color: '#818cf8',
+    color: '#9ec1e6',
     fontWeight: 'bold',
     fontSize: '12px',
   },
@@ -154,7 +156,7 @@ const styles: Record<string, React.CSSProperties> = {
     fontWeight: '500',
   },
   actionValue: {
-    color: '#10b981',
+    color: '#9ec1e6',
     fontSize: '12px',
     fontWeight: 'bold',
   },
@@ -180,12 +182,13 @@ const styles: Record<string, React.CSSProperties> = {
   episodeDone: {
     marginTop: '8px',
     padding: '6px 8px',
-    backgroundColor: '#ef4444',
-    color: '#ffffff',
+    background: 'linear-gradient(135deg, #7d4454, #68384a)',
+    color: '#dfc4cb',
     fontSize: '11px',
     fontWeight: 'bold',
     borderRadius: '4px',
     textAlign: 'center',
+    boxShadow: '0 0 12px rgba(133, 77, 95, 0.28)',
   },
 };
 
