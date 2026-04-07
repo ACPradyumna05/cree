@@ -1,292 +1,325 @@
-# CREE PROJECT — COMPLETE DEPLOYMENT & SUBMISSION GUIDE
+# CREE Hackathon MVP — Deployment & Setup Guide
 
-## PRE-SUBMISSION CHECKLIST ✓
+## 🚀 Quick Deployment Checklist
 
-### 1. ENVIRONMENT SETUP
-Your system requirements:
-- Python 3.10+: ✓ (You have 3.14.3)
-- FastAPI, uvicorn, pydantic, requests, openai installed: ✓
-- Docker installed and running (for local testing, optional)
+### Prerequisites
+- ✅ Python 3.10+ installed
+- ✅ Node.js 16+ installed
+- ✅ Docker & Docker Compose (optional, but recommended)
+- ✅ Git
 
-### 2. LOCAL TESTING (Do These FIRST)
+---
 
-#### Test 1: Start the Server
+## 🐳 Option 1: Docker Deployment (Recommended)
+
+### Local Docker Deployment
 ```bash
-cd /d/projects/cree
-uvicorn server.app:app --port 8000 --reload
+# 1. Clone repo
+git clone https://github.com/yourusername/cree.git
+cd cree
+
+# 2. Start everything with Docker Compose
+docker-compose up
+
+# 3. Wait 30-60 seconds for build
+# 4. Open http://localhost:3000
 ```
-Expected output: "Uvicorn running on http://127.0.0.1:8000"
 
-#### Test 2: In ANOTHER terminal, test endpoints
+**What happens:**
+- Backend starts on http://localhost:8000
+- Frontend builds and starts on http://localhost:3000
+- Both connected via internal Docker network
+- Hot reload enabled for development
+
+**To stop:**
 ```bash
-# Health check
+docker-compose down
+```
+
+**To rebuild (after code changes):**
+```bash
+docker-compose up --build
+```
+
+---
+
+## 🏠 Option 2: Manual Local Setup
+
+### Backend
+```bash
+# 1. Create virtual environment
+python -m venv venv
+source venv/Scripts/activate  # Windows: venv\Scripts\activate
+
+# 2. Install dependencies
+pip install -r requirements.txt
+
+# 3. Start server
+python -m uvicorn server.app:app --port 8000 --reload
+
+# Server runs on http://localhost:8000
+```
+
+### Frontend (Separate Terminal)
+```bash
+cd frontend
+
+# 1. Install dependencies
+npm install
+
+# 2. Start dev server
+npm start
+
+# Frontend opens on http://localhost:3000
+```
+
+---
+
+## ☁️ Option 3: HuggingFace Spaces Deployment
+
+### Pre-deployment Requirements
+- HuggingFace account (free)
+- This repo pushed to GitHub
+
+### Step 1: Create HuggingFace Space
+1. Go to https://huggingface.co/spaces
+2. Click **Create new Space**
+3. Configure:
+   - Name: `cree-hackathon`
+   - License: MIT
+   - SDK: **Docker**
+   - Space hardware: **Free CPU** (or GPU if available)
+
+### Step 2: Connect Repository
+```
+Repo URL: https://github.com/yourusername/cree
+Branch: main
+```
+
+### Step 3: Deploy
+- HuggingFace automatically builds Docker image
+- Deploys to public URL
+- Takes 3-5 minutes
+
+### Step 4: Access
+Your app is now live at:
+```
+https://huggingface.co/spaces/yourusername/cree-hackathon
+```
+
+**Note:** The `README.md` header (with `---` and `sdk: docker`) enables this!
+
+---
+
+## 🧪 Testing Before Deployment
+
+### Run Test Suite
+```bash
+python test_mvp.py
+```
+
+**Output:**
+```
+============================================================
+CREE Hackathon MVP - Local Test Suite
+============================================================
+1. Testing backend imports...
+   OK: All backend modules import successfully
+
+2. Testing incident analysis...
+   OK: Incident analyzed
+      - Severity: critical
+      - Signals detected: 5
+      - Summary: Detected: elevated latency, increased errors...
+
+3. Testing scenario creation...
+   OK: Scenario created
+      - Task: recovery
+      - Risk Level: 10.0
+      - Trigger Armed: False
+
+4. Testing project creation from registry...
+   OK: Project created and retrieved
+      - Session ID: a1b2c3d4
+      - Task: recovery
+
+5. Testing backwards compatibility...
+   OK: Backwards compatibility routes present
+      - /reset
+      - /step
+      - /state
+
+============================================================
+Tests Passed: 5/5
+============================================================
+```
+
+**If all tests pass:** You're ready to deploy! ✅
+
+---
+
+## 📝 Manual API Testing
+
+### Test Incident Analysis (Main Feature)
+```bash
+curl -X POST http://localhost:8000/incidents/analyze \
+  -H "Content-Type: application/json" \
+  -d '{
+    "incident_text": "Production alert: API latency increased to 3000ms, error rate 8%, database CPU 95%"
+  }'
+```
+
+**Response:**
+```json
+{
+  "session_id": "a7f3d2",
+  "analysis": {
+    "severity": "high",
+    "extracted_signals": {
+      "latency_spike": true,
+      "error_rate_increase": true,
+      "cpu_spike": true,
+      "cascading_failures": false,
+      "throughput_drop": false
+    }
+  },
+  "scenario": {
+    "task": "recovery",
+    "initial_hidden": {
+      "risk_level": 8.5,
+      "memory_pressure": 1.0,
+      "trigger_armed": false
+    }
+  }
+}
+```
+
+### Test Backend Health
+```bash
 curl http://localhost:8000/health
+# Response: {"status": "ok", "version": "2.0.0"}
+```
 
-# List tasks
-curl http://localhost:8000/tasks
-
-# List actions
+### Test Old API (Backwards Compat)
+```bash
+curl -X POST http://localhost:8000/reset
+curl http://localhost:8000/state
 curl http://localhost:8000/actions
-
-# Reset environment
-curl -X POST http://localhost:8000/reset -H "Content-Type: application/json" -d "{\"task\": \"stability\"}"
-
-# Take a step
-curl -X POST http://localhost:8000/step -H "Content-Type: application/json" -d "{\"action\": \"wait\"}"
-```
-
-Expected: All endpoints return 200 with valid JSON responses.
-
----
-
-## HUGGING FACE SPACE DEPLOYMENT
-
-### Prerequisites
-1. Hugging Face account: https://huggingface.co
-2. Hugging Face CLI installed:
-   ```bash
-   pip install huggingface_hub
-   ```
-3. Login to HF:
-   ```bash
-   huggingface-cli login
-   # Paste your HF token when prompted
-   ```
-
-### Step-by-Step Deployment
-
-#### Step 1: Create Hugging Face Space
-```bash
-# Replace USERNAME and SPACE_NAME with your values
-huggingface-cli repo create SPACE_NAME --type space --space_sdk docker
-
-# Example:
-huggingface-cli repo create cree-sre --type space --space_sdk docker
-```
-
-#### Step 2: Add HF as Remote
-```bash
-# In your cree project directory
-cd /d/projects/cree
-
-git remote add space https://huggingface.co/spaces/USERNAME/SPACE_NAME
-# Example:
-git remote add space https://huggingface.co/spaces/udai/cree-sre
-```
-
-#### Step 3: Push to Hugging Face
-```bash
-git push space main
-# First time: git push -u space main
-```
-
-Wait 2-3 minutes for HF to build and deploy. You'll see:
-- Build in progress...
-- Deployment starting...
-- Space running at: https://USERNAME-SPACE_NAME.hf.space
-
-#### Step 4: Verify Deployment
-```bash
-# Check health endpoint
-curl https://USERNAME-SPACE_NAME.hf.space/health
-
-# Should return: {"status":"ok","version":"1.0.0"}
 ```
 
 ---
 
-## OPENENV VALIDATOR
+## 🔍 Troubleshooting
 
-### Step 1: Install OpenEnv Validator
+### Docker Build Fails
 ```bash
-pip install openenv-cli
+# Clear Docker cache
+docker system prune -a
+
+# Rebuild
+docker-compose up --build
 ```
 
-### Step 2: Run Validator on Your Deployed Space
-```bash
-# Wait for space to be running, then:
-openenv validate --config openenv.yaml --url https://USERNAME-SPACE_NAME.hf.space
+### Frontend doesn't connect to backend
+- Check backend is running on port 8000
+- In frontend, verify `REACT_APP_API_URL` is set to `http://localhost:8000` (local) or backend URL (production)
 
-# The validator checks:
-# ✓ /health returns 200
-# ✓ /reset endpoint exists and returns correct schema
-# ✓ /step endpoint exists and returns correct schema
-# ✓ /state endpoint exists
-# ✓ All action names match openenv.yaml
-# ✓ Observable state matches schema
+### Port 3000 or 8000 already in use
+```bash
+# Find what's using port 3000
+lsof -i :3000
+# Kill process
+kill -9 <PID>
+
+# Or use different port
+docker-compose exec backend uvicorn server.app:app --port 8001
 ```
 
-Expected output: "✓ All validations passed"
+### WebSocket connection fails
+- Ensure both http:// and ws:// URLs work
+- Frontend will fall back to HTTP polling (slower but works)
 
----
-
-## BASELINE INFERENCE TEST
-
-### Prerequisites
-You need ONE of:
-- `OPENAI_API_KEY` (for OpenAI API)
-- `HF_TOKEN` (for HF-hosted models like Llama, Mistral)
-
-### Test Locally First (without deployed server)
+### Tests fail
 ```bash
-# Terminal 1: Start local server
-cd /d/projects/cree
-uvicorn server.app:app --port 8000
+# Make sure backend imports work
+python -c "from server.app import app"
+python -c "from server.incidents import IncidentAnalyzer"
 
-# Terminal 2: Run inference (ensure env vars are set first)
-export OPENAI_API_KEY="sk-..."
-export MODEL_NAME="gpt-4o-mini"
-export API_BASE_URL="https://api.openai.com/v1"
-export CREE_SERVER="http://localhost:8000"
-
-python inference.py
-```
-
-### Run Against Deployed Space
-```bash
-export OPENAI_API_KEY="sk-..."
-export MODEL_NAME="gpt-4o-mini"
-export API_BASE_URL="https://api.openai.com/v1"
-export CREE_SERVER="https://USERNAME-SPACE_NAME.hf.space"
-
-python inference.py
-```
-
-Expected output:
-- Runs all 3 tasks (stability, recovery, cascade_prevention)
-- Prints step-by-step scores for each action
-- Final scores printed with JSON output:
-  ```
-  FINAL SCORES
-  ================================================
-  stability              [easy]      ████░░░░░░░░░░░░░░  0.60
-  recovery              [medium]    ███░░░░░░░░░░░░░░░░  0.35
-  cascade_prevention     [hard]      ██░░░░░░░░░░░░░░░░░  0.18
-
-  Average score: 0.3800
-  JSON_SCORES:{"stability": 0.60, "recovery": 0.35, "cascade_prevention": 0.18}
-  ```
-
----
-
-## GRADER VERIFICATION
-
-All 3 graders MUST produce scores in [0.0, 1.0] range.
-
-Perfect scores:
-- **stability**: 1.0 = 25/25 steps in 'normal' status, zero failures
-- **recovery**: 1.0 = Fast recovery (step 1) + 100% stability, zero failures
-- **cascade_prevention**: 1.0 = 30 steps survived + trigger disarmed, zero failures
-
-Current baseline:
-- stability: 0.60
-- recovery: 0.35
-- cascade_prevention: 0.18
-- Average: 0.38
-
----
-
-## DOCKER BUILD TEST (Optional - For Local Validation)
-
-### Prerequisites
-- Docker Desktop installed and running
-
-### Steps
-```bash
-cd /d/projects/cree
-
-# Build
-docker build -t cree:latest .
-
-# Run
-docker run -p 8000:8000 cree:latest
-
-# In another terminal, test:
-curl http://localhost:8000/health
+# Check Python version
+python --version  # Should be 3.10+
 ```
 
 ---
 
-## FINAL PRE-SUBMISSION VALIDATION CHECKLIST
+## 📊 Performance Tips
 
-Run this before submitting:
+### For Local Development
+- Use `--reload` flag for fast iteration
+- Keep Docker volumes mounted for live changes
+- Frontend hot reload happens automatically
 
-- [ ] **HF Space deployed**: Is the Space URL live? (https://USERNAME-SPACE_NAME.hf.space)
-- [ ] **OpenEnv validator passes**: Does `openenv validate` show all green?
-- [ ] **Dockerfile builds**: Does `docker build -t cree:latest .` work? (if Docker available)
-- [ ] **Baseline reproduces**: Does `inference.py` run without errors?
-- [ ] **All 3 graders work**: Do stability, recovery, cascade_prevention produce 0.0-1.0 scores?
-- [ ] **3+ tasks defined**: Do /tasks endpoint show 3 tasks?
-- [ ] **Env vars documented**: Are API_BASE_URL, MODEL_NAME, HF_TOKEN instructions in README? ✓
-- [ ] **inference.py in root**: Does /d/projects/cree/inference.py exist? ✓
-- [ ] **Using OpenAI Client**: Does code import from `openai`? ✓
-- [ ] **<20 min runtime**: Will tasks complete within 20 minutes on vCPU=2, mem=8gb? (Expected ~2-3 min per task)
-- [ ] **Ping reset() endpoint**: Does /reset return 200 and correct schema?
-- [ ] **README complete**: Environment descriptions, instructions, baseline scores? ✓
+### For Production (HF Spaces)
+- Docker image is optimized (multi-stage build)
+- Frontend minified bundle
+- Backend runs on gunicorn (if needed)
 
 ---
 
-## TROUBLESHOOTING
+## 🔐 Environment Variables
 
-### "Cannot reach CREE server"
-- Make sure uvicorn is running on port 8000
-- Check firewall isn't blocking port 8000
+### For HuggingFace Spaces
+No env vars required! The MVP works without OpenAI.
 
-### "OpenEnv validator fails"
-- Ensure space is fully deployed (wait 5 minutes after git push)
-- Check openenv.yaml schema against /actions and /tasks endpoints
-
-### "inference.py: KeyError for env vars"
-- Ensure all required vars are set:
-  - OPENAI_API_KEY or HF_TOKEN
-  - MODEL_NAME
-  - API_BASE_URL
-
-### "Grader returns NaN"
-- Check episode_metrics has all required keys: total_steps, steps_in_normal, failures
-- Verify hidden state transitions properly
-
-### Docker daemon not found
-- Ensure Docker Desktop is running (Windows/Mac)
-- On Linux: `sudo systemctl start docker`
-
----
-
-## QUICK COMMAND REFERENCE
-
+### If adding LLM baseline later
 ```bash
-# Start server locally
-uvicorn server.app:app --port 8000
-
-# Test endpoint
-curl http://localhost:8000/health
-
-# Deploy to HF
-git remote add space https://huggingface.co/spaces/USERNAME/SPACE_NAME
-git push space main
-
-# Run baseline
-OPENAI_API_KEY='sk-...' MODEL_NAME='gpt-4o-mini' API_BASE_URL='https://api.openai.com/v1' python inference.py
-
-# Validate
-openenv validate --config openenv.yaml --url https://USERNAME-SPACE_NAME.hf.space
-
-# Build Docker
-docker build -t cree:latest .
-docker run -p 8000:8000 cree:latest
+OPENAI_API_KEY=sk-xxx...
+MODEL_NAME=gpt-4o-mini
+API_BASE_URL=https://api.openai.com/v1
 ```
 
 ---
 
-## FINAL NOTES
+## 📈 Scaling Considerations
 
-Your project meets ALL functional requirements:
-✓ Real-world SRE task simulation
-✓ OpenEnv spec compliance
-✓ 3 tasks with deterministic graders
-✓ Meaningful multi-component reward
-✓ Baseline inference script with OpenAI Client
-✓ Dockerfile with health checks
-✓ Complete API documentation
+### Current Setup
+- Single-machine deployment
+- In-memory session storage
+- SQLite optional (not configured)
 
-Ready for submission after deployment!
+### For Production Scale
+1. **Add database**: PostgreSQL with SQLAlchemy
+2. **Add auth**: JWT tokens + user accounts
+3. **Add caching**: Redis for session storage
+4. **Add logging**: CloudWatch or similar
+5. **Add monitoring**: Prometheus + Grafana
+
+---
+
+## 🎯 Deployment Checklist
+
+- [ ] All tests pass (`python test_mvp.py`)
+- [ ] Local Docker works (`docker-compose up`)
+- [ ] Frontend builds successfully (`npm run build`)
+- [ ] Backend health check passes (`curl http://localhost:8000/health`)
+- [ ] Incident analysis works (`curl -X POST /incidents/analyze`)
+- [ ] README.md is updated
+- [ ] Code is committed to git
+- [ ] GitHub repo is public
+- [ ] HuggingFace Space created and connected
+- [ ] Deployment successful and accessible
+
+---
+
+## 🚀 You're Ready!
+
+Your CREE hackathon MVP is ready for:
+- ✅ Local testing
+- ✅ Docker deployment
+- ✅ HuggingFace Spaces deployment
+- ✅ Hackathon submission
+
+**Next:** Share the link and get feedback!
+
+---
+
+**Questions?** Check `LOCAL_TESTING_GUIDE.md` or `INTEGRATION_GUIDE.md` for more details.

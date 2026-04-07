@@ -1,0 +1,50 @@
+version: '3.8'
+
+services:
+  # CREE Backend API
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: cree-backend
+    ports:
+      - "8000:8000"
+    environment:
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+      - MODEL_NAME=${MODEL_NAME:-gpt-4o-mini}
+      - API_BASE_URL=${API_BASE_URL:-https://api.openai.com/v1}
+    volumes:
+      - .:/app
+    command: uvicorn server.app:app --host 0.0.0.0 --port 8000 --reload
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - cree-network
+
+  # CREE Frontend Dashboard
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: cree-frontend
+    ports:
+      - "3000:3000"
+    environment:
+      - REACT_APP_API_URL=http://backend:8000
+    depends_on:
+      backend:
+        condition: service_healthy
+    networks:
+      - cree-network
+    stdin_open: true
+    tty: true
+
+networks:
+  cree-network:
+    driver: bridge
+
+volumes:
+  cree_data:
