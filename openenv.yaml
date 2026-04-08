@@ -108,6 +108,18 @@ endpoints:
     method: GET
     path: /health
     description: "Liveness probe"
+  metadata:
+    method: GET
+    path: /metadata
+    description: "Environment metadata"
+  schema:
+    method: GET
+    path: /schema
+    description: "Action/observation/state schema"
+  mcp:
+    method: POST
+    path: /mcp
+    description: "JSON-RPC compatibility endpoint"
 
 # ---------------------------------------------------------------------------
 # Tasks

@@ -27,14 +27,14 @@ WS     /ws/{id}               → WebSocket metric stream
 import sys, os
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi import FastAPI, HTTPException, WebSocket, WebSocketDisconnect
+from fastapi import Body, FastAPI, HTTPException, WebSocket, WebSocketDisconnect
 from pydantic import BaseModel, field_validator
-from typing import Optional
+from typing import Any, Optional
 import asyncio
 
 from env.environment import BlackBoxEnvironment, TASK_CONFIGS
 from tasks.graders import TASKS, grade
-from models import ACTIONS
+from models import ACTIONS, ACTION_NAMES
 from server.sessions import registry, ProjectInfo
 from server.ws_handler import ws_manager
 from server.incidents import IncidentAnalyzer, create_scenario_from_incident
@@ -204,7 +204,66 @@ def grade_episode():
 
 @app.get("/health")
 def health():
-    return {"status": "ok", "version": "2.0.0"}
+    return {"status": "healthy"}
+
+
+@app.get("/metadata")
+def metadata():
+    return {
+        "name": "cree",
+        "description": (
+            "CREE (Causal Reverse Engineering Engine) is an SRE incident-response "
+            "environment with hidden causal dynamics."
+        ),
+    }
+
+
+@app.get("/schema")
+def schema():
+    observation_schema = {
+        "type": "object",
+        "properties": {
+            "latency": {"type": "number"},
+            "error_rate": {"type": "number"},
+            "throughput": {"type": "number"},
+            "cpu_load": {"type": "number"},
+            "status": {"type": "string"},
+        },
+        "required": ["latency", "error_rate", "throughput", "cpu_load", "status"],
+    }
+
+    action_schema = {
+        "type": "object",
+        "properties": {
+            "action": {
+                "type": "string",
+                "enum": ACTION_NAMES,
+            }
+        },
+        "required": ["action"],
+        "additionalProperties": False,
+    }
+
+    return {
+        "action": action_schema,
+        "observation": observation_schema,
+        "state": observation_schema,
+    }
+
+
+@app.post("/mcp")
+def mcp(payload: Optional[dict[str, Any]] = Body(default=None)):
+    req_id = payload.get("id") if isinstance(payload, dict) else None
+    method = payload.get("method") if isinstance(payload, dict) else None
+    return {
+        "jsonrpc": "2.0",
+        "id": req_id,
+        "result": {
+            "ok": True,
+            "method": method,
+            "service": "cree",
+        },
+    }
 
 
 # =========================================================================

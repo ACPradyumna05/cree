@@ -44,5 +44,10 @@
       "last 1 firefox version",
       "last 1 safari version"
     ]
+  },
+  "devDependencies": {
+    "@types/three": "^0.183.1",
+    "ajv": "^8.18.0",
+    "ajv-keywords": "^5.1.0"
   }
 }
