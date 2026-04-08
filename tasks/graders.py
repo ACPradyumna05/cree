@@ -14,6 +14,19 @@ metrics is the 'episode_metrics' dict from env.episode_metrics at episode end.
 from typing import Dict, Any
 
 
+MIN_STRICT_SCORE = 0.0001
+MAX_STRICT_SCORE = 0.9999
+
+
+def _strict_open_interval(score: float) -> float:
+    """Clamp score into the strict open interval (0, 1)."""
+    if score <= 0.0:
+        return MIN_STRICT_SCORE
+    if score >= 1.0:
+        return MAX_STRICT_SCORE
+    return score
+
+
 # ---------------------------------------------------------------------------
 # Task metadata (mirrors TASK_CONFIGS in environment.py — single source of
 # truth for grader logic is here; environment provides initial conditions)
@@ -150,6 +163,7 @@ def grade(task_id: str, metrics: Dict[str, Any]) -> Dict[str, Any]:
     task     = TASKS[task_id]
     fn       = GRADER_MAP[task_id]
     score    = fn(metrics, task["max_steps"])
+    score    = round(_strict_open_interval(float(score)), 4)
 
     return {
         "task_id":    task_id,
