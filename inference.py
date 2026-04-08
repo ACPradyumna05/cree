@@ -1,51 +1,44 @@
 """
 CREE Baseline Inference Script
 ================================
-Runs an LLM agent against all 3 CREE tasks and reports scores.
+Runs an LLM agent against all 3 CREE tasks and emits validator-friendly logs.
 
 Environment variables required:
-    API_BASE_URL   — OpenAI-compatible API endpoint (e.g. https://api.openai.com/v1)
-    MODEL_NAME     — Model identifier (e.g. gpt-4o-mini)
-    OPENAI_API_KEY — API key
-    HF_TOKEN       — (optional) Hugging Face token for HF-hosted models
-    CREE_SERVER    — (optional) CREE server URL, default http://localhost:8000
-
-Usage:
-    python inference.py
-
-Output:
-    Prints score for each task and a final summary table.
+    API_BASE_URL   - OpenAI-compatible API endpoint (e.g. https://api.openai.com/v1)
+    MODEL_NAME     - Model identifier (e.g. gpt-4o-mini)
+    OPENAI_API_KEY - API key
+    HF_TOKEN       - (optional) Hugging Face token for HF-hosted models
+    CREE_SERVER    - (optional) CREE server URL, default http://localhost:8000
 """
 
 import os
 import sys
-import json
 import requests
-from typing import Optional
+from typing import Optional, List
 
 from openai import OpenAI
+from dotenv import load_dotenv
+
+load_dotenv()
 
 # ---------------------------------------------------------------------------
 # Configuration from environment variables
 # ---------------------------------------------------------------------------
 
-API_BASE_URL   = os.environ.get("API_BASE_URL",   "https://api.openai.com/v1")
-MODEL_NAME     = os.environ.get("MODEL_NAME",     "gpt-4o-mini")
+API_BASE_URL = os.environ.get("API_BASE_URL", "https://api.openai.com/v1")
+MODEL_NAME = os.environ.get("MODEL_NAME", "gpt-4o-mini")
 OPENAI_API_KEY = os.environ.get("OPENAI_API_KEY", "")
-HF_TOKEN       = os.environ.get("HF_TOKEN",       "")
-CREE_SERVER    = os.environ.get("CREE_SERVER",    "http://localhost:8000")
+HF_TOKEN = os.environ.get("HF_TOKEN", "")
+CREE_SERVER = os.environ.get("CREE_SERVER", "http://localhost:8000")
+BENCHMARK = os.environ.get("BENCHMARK", "cree")
 
 CLIENT_API_KEY = OPENAI_API_KEY or HF_TOKEN
 
 if not CLIENT_API_KEY:
-    print("ERROR: Set OPENAI_API_KEY (or HF_TOKEN for HF-hosted OpenAI-compatible endpoints).")
+    print("ERROR: Set OPENAI_API_KEY (or HF_TOKEN for HF-hosted OpenAI-compatible endpoints).", file=sys.stderr)
     sys.exit(1)
 
-# Initialise OpenAI client
-client = OpenAI(
-    api_key=CLIENT_API_KEY,
-    base_url=API_BASE_URL,
-)
+client = OpenAI(api_key=CLIENT_API_KEY, base_url=API_BASE_URL)
 
 
 # ---------------------------------------------------------------------------
@@ -68,8 +61,8 @@ class CREEEnv:
         d = r.json()
         return {
             "observation": d["observation"],
-            "reward":      d["reward"],
-            "done":        d["done"],
+            "reward": d["reward"],
+            "done": d["done"],
         }
 
     def grade(self) -> dict:
@@ -96,27 +89,18 @@ class CREEEnv:
 SYSTEM_PROMPT = """You are an expert Site Reliability Engineer (SRE) managing a production system.
 At each step you observe the system's metrics and must choose exactly ONE action to take.
 
-Your goal depends on the current task — read it carefully.
+Your goal depends on the current task - read it carefully.
 
-Respond with ONLY the action name — no explanation, no punctuation, just the action name.
+Respond with ONLY the action name - no explanation, no punctuation, just the action name.
 If you are unsure, choose 'wait' or 'probe_latency'."""
 
 
-def build_user_prompt(
-    obs: dict,
-    task_desc: str,
-    actions: list,
-    history: list,
-    step: int,
-    max_steps: int,
-) -> str:
-    action_list = "\n".join(
-        f"  - {a['name']}: {a['description']}" for a in actions
-    )
+def build_user_prompt(obs: dict, task_desc: str, actions: list, history: list, step: int, max_steps: int) -> str:
+    action_list = "\n".join(f"  - {a['name']}: {a['description']}" for a in actions)
     history_str = ""
     if history:
         history_str = "\nLast 5 steps:\n" + "\n".join(
-            f"  step {h['step']}: action={h['action']} → "
+            f"  step {h['step']}: action={h['action']} -> "
             f"status={h['obs']['status']} lat={h['obs']['latency']:.0f}ms "
             f"err={h['obs']['error_rate']:.3f} reward={h['reward']:+.2f}"
             for h in history[-5:]
@@ -138,30 +122,49 @@ Available actions:
 Choose exactly one action name:"""
 
 
-def choose_action(obs: dict, task_desc: str, actions: list, history: list,
-                  step: int, max_steps: int, valid_names: list) -> str:
+def choose_action(obs: dict, task_desc: str, actions: list, history: list, step: int, max_steps: int, valid_names: list) -> str:
     prompt = build_user_prompt(obs, task_desc, actions, history, step, max_steps)
-
     try:
         response = client.chat.completions.create(
             model=MODEL_NAME,
             messages=[
-                {"role": "system",  "content": SYSTEM_PROMPT},
-                {"role": "user",    "content": prompt},
+                {"role": "system", "content": SYSTEM_PROMPT},
+                {"role": "user", "content": prompt},
             ],
             max_tokens=20,
             temperature=0.0,
         )
-        raw = response.choices[0].message.content.strip().lower().replace("-", "_")
-        # Find first valid action name that appears in the response
+        raw = (response.choices[0].message.content or "").strip().lower().replace("-", "_")
         for name in valid_names:
             if name in raw:
                 return name
-        # Fallback
         return "wait"
     except Exception as exc:
-        print(f"  [LLM error: {exc}] → defaulting to 'wait'")
+        print(f"[DEBUG] LLM error: {exc} -> defaulting to 'wait'", file=sys.stderr)
         return "wait"
+
+
+# ---------------------------------------------------------------------------
+# Required stdout format
+# ---------------------------------------------------------------------------
+
+def log_start(task: str, env_name: str, model: str) -> None:
+    print(f"[START] task={task} env={env_name} model={model}", flush=True)
+
+
+def log_step(step: int, action: str, reward: float, done: bool, error: Optional[str]) -> None:
+    print(
+        f"[STEP] step={step} action={action} reward={reward:.2f} done={str(done).lower()} error={error if error else 'null'}",
+        flush=True,
+    )
+
+
+def log_end(success: bool, steps: int, score: float, rewards: List[float]) -> None:
+    rewards_str = ",".join(f"{r:.2f}" for r in rewards)
+    print(
+        f"[END] success={str(success).lower()} steps={steps} score={score:.4f} rewards={rewards_str}",
+        flush=True,
+    )
 
 
 # ---------------------------------------------------------------------------
@@ -172,45 +175,63 @@ def run_task(env: CREEEnv, task_id: str) -> dict:
     task_meta = env.get_task(task_id)
     task_desc = task_meta.get("description", task_id)
     max_steps = task_meta.get("max_steps", 30)
-    actions   = env.list_actions()
+    actions = env.list_actions()
     valid_names = [a["name"] for a in actions]
 
-    obs      = env.reset(task=task_id)
-    history  = []
-    total_r  = 0.0
+    obs = env.reset(task=task_id)
+    history = []
+    rewards: List[float] = []
+    steps_taken = 0
+    grade_result = {"score": 0.0}
+    success = False
 
-    print(f"\n  Task: {task_meta.get('name', task_id)}  [{task_meta.get('difficulty','?')}]")
-    print(f"  Max steps: {max_steps}")
-    print(f"  Start state: status={obs['status']} lat={obs['latency']:.0f}ms")
+    log_start(task=task_id, env_name=BENCHMARK, model=MODEL_NAME)
 
-    for step in range(1, max_steps + 1):
-        action = choose_action(obs, task_desc, actions, history, step, max_steps, valid_names)
-        result = env.step(action)
-        total_r += result["reward"]
+    try:
+        for step in range(1, max_steps + 1):
+            action = choose_action(obs, task_desc, actions, history, step, max_steps, valid_names)
 
-        history.append({
-            "step":   step,
-            "action": action,
-            "obs":    result["observation"],
-            "reward": result["reward"],
-        })
+            step_error: Optional[str] = None
+            reward = 0.0
+            done = False
 
-        status = result["observation"]["status"]
-        print(
-            f"  step {step:2d}: {action:22s} → {status:10s} "
-            f"lat={result['observation']['latency']:5.0f}ms "
-            f"R={result['reward']:+.2f}",
-            flush=True,
-        )
+            try:
+                result = env.step(action)
+                reward = float(result.get("reward", 0.0))
+                done = bool(result.get("done", False))
+                obs = result["observation"]
+                history.append(
+                    {
+                        "step": step,
+                        "action": action,
+                        "obs": obs,
+                        "reward": reward,
+                    }
+                )
+            except Exception as exc:
+                step_error = str(exc)
+                done = True
 
-        obs = result["observation"]
-        if result["done"]:
-            print("  ** FAILURE — episode ended early **")
-            break
+            rewards.append(reward)
+            steps_taken = step
+            log_step(step=step, action=action, reward=reward, done=done, error=step_error)
 
-    grade_result = env.grade()
-    score = grade_result.get("score", 0.0)
-    print(f"  → Score: {score:.4f}  (total_reward={total_r:+.2f})")
+            if done:
+                break
+
+        grade_result = env.grade()
+        score = float(grade_result.get("score", 0.0))
+        score = min(max(score, 0.0), 1.0)
+        success = score > 0.0
+
+    except Exception as exc:
+        print(f"[DEBUG] Task execution error for {task_id}: {exc}", file=sys.stderr)
+
+    finally:
+        score = float(grade_result.get("score", 0.0))
+        score = min(max(score, 0.0), 1.0)
+        log_end(success=success, steps=steps_taken, score=score, rewards=rewards)
+
     return grade_result
 
 
@@ -218,49 +239,18 @@ def run_task(env: CREEEnv, task_id: str) -> dict:
 # Main
 # ---------------------------------------------------------------------------
 
-def main():
-    print("=" * 60)
-    print("CREE Baseline Inference")
-    print(f"  Model:  {MODEL_NAME}")
-    print(f"  Server: {CREE_SERVER}")
-    print("=" * 60)
-
-    # Health check
+def main() -> None:
     try:
         r = requests.get(f"{CREE_SERVER}/health", timeout=5)
         r.raise_for_status()
-        print(f"Server OK: {r.json()}")
     except Exception as exc:
-        print(f"ERROR: Cannot reach CREE server at {CREE_SERVER}: {exc}")
-        print("Start it with:  uvicorn server.app:app --port 8000")
+        print(f"ERROR: Cannot reach CREE server at {CREE_SERVER}: {exc}", file=sys.stderr)
+        print("Start it with: uvicorn server.app:app --port 8000", file=sys.stderr)
         sys.exit(1)
 
-    env    = CREEEnv(CREE_SERVER)
-    scores = {}
-
+    env = CREEEnv(CREE_SERVER)
     for task_id in ["stability", "recovery", "cascade_prevention"]:
-        print(f"\n{'─'*60}")
-        print(f"Running task: {task_id}")
-        print('─' * 60)
-        result        = run_task(env, task_id)
-        scores[task_id] = result.get("score", 0.0)
-
-    # Final summary
-    print(f"\n{'='*60}")
-    print("FINAL SCORES")
-    print('=' * 60)
-    for task_id, score in scores.items():
-        difficulty = {"stability": "easy", "recovery": "medium",
-                      "cascade_prevention": "hard"}.get(task_id, "?")
-        bar = "█" * int(score * 20) + "░" * (20 - int(score * 20))
-        print(f"  {task_id:22s} [{difficulty:6s}]  {bar}  {score:.4f}")
-
-    avg = sum(scores.values()) / len(scores)
-    print(f"\n  Average score: {avg:.4f}")
-    print('=' * 60)
-
-    # Machine-readable output for automated validators
-    print("\nJSON_SCORES:" + json.dumps(scores))
+        run_task(env, task_id)
 
 
 if __name__ == "__main__":
