@@ -57,6 +57,9 @@ const Dashboard: React.FC<DashboardProps> = ({ initialSessionId = null, onResetT
         setConnected(true);
         const tasksData = await client.getTasks();
         setTasks(tasksData.tasks);
+        if (!selectedTask && tasksData.tasks.length > 0) {
+          setSelectedTask(tasksData.tasks[0].id);
+        }
         const actionsData = await client.getActions();
         setActions(actionsData.actions);
         await loadProjects();
@@ -66,7 +69,7 @@ const Dashboard: React.FC<DashboardProps> = ({ initialSessionId = null, onResetT
       }
     };
     checkConnection();
-  }, [client, loadProjects]);
+  }, [client, loadProjects, selectedTask]);
 
   // Subscribe to WebSocket metrics when session changes
   useEffect(() => {
@@ -80,14 +83,7 @@ const Dashboard: React.FC<DashboardProps> = ({ initialSessionId = null, onResetT
       setWsStatus('connecting');
       // Subscribe to metrics
       unsubscribeRef.current = client.subscribeToMetrics((metric: MetricUpdate) => {
-        if (metric.type === 'metric_batch') {
-          // Handle batch updates
-          metric.updates?.forEach((update) => {
-            if (update.observation) {
-              setState(update.observation);
-            }
-          });
-        } else if (metric.type === 'metric_update') {
+        if (metric.type === 'metric_update') {
           // Handle individual updates
           if (metric.observation) {
             setState(metric.observation);
@@ -285,6 +281,8 @@ const Dashboard: React.FC<DashboardProps> = ({ initialSessionId = null, onResetT
     });
   };
 
+  const selectedTaskMeta = selectedTask ? tasks.find((task) => task.id === selectedTask) : null;
+
   return (
     <div style={styles.dashboard}>
       <header style={styles.header}>
@@ -379,6 +377,16 @@ const Dashboard: React.FC<DashboardProps> = ({ initialSessionId = null, onResetT
         {/* Left side - Controls */}
         <div style={styles.leftPanel}>
           <div style={styles.section}>
+            <h2 style={styles.sectionTitle}>What This Is</h2>
+            <div style={styles.guideCard}>
+              <div style={styles.guideLine}><strong>Objective:</strong> Prove you understand hidden cause-effect dynamics.</div>
+              <div style={styles.guideLine}><strong>Flow:</strong> Select task -&gt; Reset Episode -&gt; Step actions -&gt; Grade Episode.</div>
+              <div style={styles.guideLine}><strong>Judge lens:</strong> Good score + strong reasoning beats random success.</div>
+              <div style={styles.guideLine}><strong>LLM benchmark (optional):</strong> Run inference.py from terminal with API key.</div>
+            </div>
+          </div>
+
+          <div style={styles.section}>
             <h2 style={styles.sectionTitle}>Task Selection</h2>
             <select
               value={selectedTask || ''}
@@ -392,6 +400,23 @@ const Dashboard: React.FC<DashboardProps> = ({ initialSessionId = null, onResetT
                 </option>
               ))}
             </select>
+
+            <div style={styles.taskMissionCard}>
+              {selectedTaskMeta ? (
+                <>
+                  <div style={styles.taskMissionTitle}>Current Mission</div>
+                  <div style={styles.taskMissionText}>{selectedTaskMeta.description}</div>
+                  <div style={styles.taskMissionMeta}>
+                    Difficulty: {selectedTaskMeta.difficulty} | Max steps: {selectedTaskMeta.max_steps}
+                  </div>
+                </>
+              ) : (
+                <>
+                  <div style={styles.taskMissionTitle}>Current Mission</div>
+                  <div style={styles.taskMissionText}>Free exploration mode. Pick a task to get a clear win condition and grading target.</div>
+                </>
+              )}
+            </div>
           </div>
 
           <div style={styles.section}>
@@ -768,6 +793,44 @@ const styles: Record<string, React.CSSProperties> = {
   btnDisabled: {
     opacity: 0.5,
     cursor: 'not-allowed',
+  },
+  guideCard: {
+    backgroundColor: 'rgba(7, 15, 30, 0.86)',
+    border: '1px solid rgba(94, 138, 188, 0.28)',
+    borderRadius: '6px',
+    padding: '12px',
+    display: 'grid',
+    gap: '8px',
+  },
+  guideLine: {
+    fontSize: '12px',
+    color: '#9db3cd',
+    lineHeight: 1.4,
+  },
+  taskMissionCard: {
+    marginTop: '12px',
+    padding: '10px 12px',
+    borderRadius: '8px',
+    backgroundColor: 'rgba(7, 15, 30, 0.86)',
+    border: '1px solid rgba(94, 138, 188, 0.28)',
+    display: 'grid',
+    gap: '6px',
+  },
+  taskMissionTitle: {
+    color: '#9ec1e6',
+    fontSize: '12px',
+    fontWeight: 700,
+    letterSpacing: '0.04em',
+    textTransform: 'uppercase',
+  },
+  taskMissionText: {
+    color: '#b4c7dc',
+    fontSize: '12px',
+    lineHeight: 1.4,
+  },
+  taskMissionMeta: {
+    color: '#8ea6c1',
+    fontSize: '11px',
   },
   statGrid: {
     display: 'grid',

@@ -32,6 +32,10 @@ python -m uvicorn server.app:app --port 8000 --reload
 
 ## Features
 
+### Usage Modes
+- Manual mode: choose a task, reset, take actions, then grade.
+- LLM mode: optional terminal workflow via `inference.py` (requires API key).
+
 ### Metrics Display
 - Real-time visualization of system metrics:
   - Latency (ms)

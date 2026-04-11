@@ -27,11 +27,6 @@ class ProjectInfo(BaseModel):
     steps_taken: int = 0
     total_reward: float = 0.0
 
-    class Config:
-        json_encoders = {
-            datetime: lambda v: v.isoformat()
-        }
-
 
 # ---------------------------------------------------------------------------
 # ProjectSession — Wraps an environment with metadata

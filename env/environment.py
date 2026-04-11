@@ -43,9 +43,6 @@ Hidden causal rules (what the agent must DISCOVER):
 import random
 from typing import Tuple, Dict, Any, Optional
 
-import sys, os
-sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-
 from models import (
     ObservableState, HiddenState, EnvironmentState,
     StepResult, ACTION_NAMES,
@@ -101,6 +98,7 @@ class BlackBoxEnvironment:
         self._visited_signatures: set = set()
         self.state: EnvironmentState = None   # type: ignore
         self.current_task: Optional[str] = None
+        self.scenario_config: Optional[Dict[str, Any]] = None
         # Episode-level metrics for grading
         self.episode_metrics: Dict[str, Any] = {}
         self.reset()
@@ -109,10 +107,17 @@ class BlackBoxEnvironment:
     # Public API
     # ------------------------------------------------------------------
 
-    def reset(self, task_id: Optional[str] = None) -> ObservableState:
+    def reset(self, task_id: Optional[str] = None, scenario: Optional[Dict[str, Any]] = None) -> ObservableState:
+        # Allow scenario-driven initialization (e.g., incident-derived setup).
+        active_scenario = scenario or self.scenario_config
+        if task_id is None and active_scenario:
+            task_id = active_scenario.get("task")
+
         self.current_task = task_id
 
-        if task_id and task_id in TASK_CONFIGS:
+        if active_scenario and isinstance(active_scenario.get("initial_hidden"), dict):
+            hidden = HiddenState(**active_scenario["initial_hidden"])
+        elif task_id and task_id in TASK_CONFIGS:
             h_cfg = TASK_CONFIGS[task_id]["initial_hidden"]
             hidden = HiddenState(**h_cfg)
         else:

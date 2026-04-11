@@ -81,7 +81,7 @@ const styles: Record<string, React.CSSProperties> = {
   },
   filterBtn: {
     padding: '6px 12px',
-    backgroundColor: 'rgba(36, 49, 74, 0.82)',
+    backgroundColor: '#1d2a42',
     color: '#c7d8ed',
     border: '1px solid rgba(94, 138, 188, 0.3)',
     borderRadius: '4px',
@@ -91,7 +91,11 @@ const styles: Record<string, React.CSSProperties> = {
     transition: 'all 0.2s ease',
     outline: 'none',
     appearance: 'none',
+    WebkitAppearance: 'none',
+    MozAppearance: 'none',
+    WebkitTextFillColor: '#c7d8ed',
     WebkitTapHighlightColor: 'transparent',
+    userSelect: 'none',
   },
   filterBtnActive: {
     background: 'linear-gradient(135deg, #253b77, #352f67)',
@@ -106,7 +110,7 @@ const styles: Record<string, React.CSSProperties> = {
   },
   actionBtn: {
     padding: '12px 10px',
-    backgroundColor: 'rgba(36, 49, 74, 0.82)',
+    backgroundColor: '#1d2a42',
     color: '#c7d8ed',
     border: '1px solid rgba(94, 138, 188, 0.3)',
     borderRadius: '6px',
@@ -117,7 +121,11 @@ const styles: Record<string, React.CSSProperties> = {
     textAlign: 'left',
     outline: 'none',
     appearance: 'none',
+    WebkitAppearance: 'none',
+    MozAppearance: 'none',
+    WebkitTextFillColor: '#c7d8ed',
     WebkitTapHighlightColor: 'transparent',
+    userSelect: 'none',
   },
   actionBtnDisabled: {
     opacity: 0.5,

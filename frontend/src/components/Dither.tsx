@@ -160,7 +160,16 @@ function ShaderPlane({
       enableMouseInteraction: { value: enableMouseInteraction ? 1 : 0 },
       mouseRadius: { value: mouseRadius },
     }),
-    []
+    [
+      colorNum,
+      enableMouseInteraction,
+      mouseRadius,
+      pixelSize,
+      waveAmplitude,
+      waveColor,
+      waveFrequency,
+      waveSpeed,
+    ]
   );
 
   useEffect(() => {

@@ -122,6 +122,55 @@ def test_backwards_compatibility():
         return False
 
 
+def test_incident_scenario_applies_on_reset():
+    print("\n6. Testing incident scenario application on project reset...")
+    try:
+        from server.incidents import IncidentAnalyzer, create_scenario_from_incident
+        from server.sessions import registry
+
+        incident = "CRITICAL: cascading failures, latency 5000ms, CPU 97%, error spike"
+        analysis = IncidentAnalyzer.analyze(incident)
+        scenario = create_scenario_from_incident(analysis)
+
+        session_id = registry.create_project(task=scenario['task'])
+        project = registry.get_project(session_id)
+        assert project is not None
+
+        project.environment.scenario_config = scenario
+        project.environment.reset(task_id=scenario['task'], scenario=scenario)
+
+        hidden = project.environment.state.hidden
+        assert hidden.risk_level == scenario['initial_hidden']['risk_level']
+        assert hidden.trigger_armed == scenario['initial_hidden']['trigger_armed']
+        assert hidden.system_mode == scenario['initial_hidden']['system_mode']
+
+        print("   OK: Incident-derived scenario is applied to hidden state")
+        print(f"      - Task: {scenario['task']}")
+        print(f"      - Risk Level: {hidden.risk_level:.1f}")
+        print(f"      - Trigger Armed: {hidden.trigger_armed}")
+        return True
+    except Exception as e:
+        print(f"   FAIL: {e}")
+        return False
+
+
+def test_health_contract():
+    print("\n7. Testing health endpoint contract...")
+    try:
+        from server.app import health
+
+        response = health()
+        assert response.get('status') == 'healthy'
+        assert isinstance(response.get('version'), str)
+
+        print("   OK: /health returns status and version")
+        print(f"      - Version: {response['version']}")
+        return True
+    except Exception as e:
+        print(f"   FAIL: {e}")
+        return False
+
+
 def main():
     print("=" * 60)
     print("CREE Hackathon MVP - Local Test Suite")
@@ -133,6 +182,8 @@ def main():
         test_scenario_creation,
         test_project_creation,
         test_backwards_compatibility,
+        test_incident_scenario_applies_on_reset,
+        test_health_contract,
     ]
 
     results = [test() for test in tests]

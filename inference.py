@@ -3,6 +3,9 @@ CREE Baseline Inference Script
 ================================
 Runs an LLM agent against all 3 CREE tasks and emits validator-friendly logs.
 
+This script is optional and intended for terminal-based model benchmarking.
+The dashboard can be used without any LLM API key.
+
 Environment variables required:
     API_BASE_URL   - OpenAI-compatible API endpoint (e.g. https://api.openai.com/v1)
     MODEL_NAME     - Model identifier (e.g. gpt-4o-mini)
@@ -13,6 +16,7 @@ Environment variables required:
 
 import os
 import sys
+import re
 import requests
 from typing import Optional, List
 
@@ -135,6 +139,14 @@ def choose_action(obs: dict, task_desc: str, actions: list, history: list, step:
             temperature=0.0,
         )
         raw = (response.choices[0].message.content or "").strip().lower().replace("-", "_")
+        tokens = re.findall(r"[a-z_]+", raw)
+
+        # Prefer exact token matches to avoid accidental substring collisions.
+        for token in tokens:
+            if token in valid_names:
+                return token
+
+        # Fallback: allow substring matching if model returns extra punctuation/text.
         for name in valid_names:
             if name in raw:
                 return name

@@ -9,8 +9,18 @@
 }
 
 button:hover:not(:disabled) {
-  transform: translateY(-2px);
-  box-shadow: 0 0 0 1px rgba(98, 237, 255, 0.45), 0 0 16px rgba(98, 237, 255, 0.35), 0 8px 24px rgba(5, 9, 22, 0.55);
+  transform: translateY(-1px);
+  box-shadow: 0 0 0 1px rgba(108, 146, 189, 0.35), 0 6px 14px rgba(5, 9, 22, 0.35);
+}
+
+button:focus,
+button:focus-visible {
+  outline: none;
+}
+
+button:active:not(:disabled) {
+  transform: translateY(0);
+  box-shadow: 0 0 0 1px rgba(108, 146, 189, 0.28), 0 2px 8px rgba(5, 9, 22, 0.32);
 }
 
 select:hover {

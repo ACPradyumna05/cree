@@ -129,5 +129,11 @@ export interface IncidentScenarioResponse {
   session_id: string;
   project: ProjectInfo;
   analysis: IncidentAnalysis;
+  scenario?: {
+    task: string;
+    initial_hidden: Record<string, any>;
+    severity: 'low' | 'medium' | 'high' | 'critical';
+    description: string;
+  };
   message: string;
 }

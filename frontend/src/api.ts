@@ -43,6 +43,8 @@ class CREEClient {
   private saveSessionToStorage() {
     if (this.sessionId) {
       localStorage.setItem('cree_session_id', this.sessionId);
+    } else {
+      localStorage.removeItem('cree_session_id');
     }
   }
 
@@ -66,7 +68,16 @@ class CREEClient {
     try {
       const response = await fetch(url, options);
       if (!response.ok) {
-        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+        let detail = response.statusText;
+        try {
+          const errorBody = await response.json();
+          if (errorBody?.detail) {
+            detail = typeof errorBody.detail === 'string' ? errorBody.detail : JSON.stringify(errorBody.detail);
+          }
+        } catch {
+          // Ignore JSON parsing failures and keep status text fallback.
+        }
+        throw new Error(`HTTP ${response.status}: ${detail}`);
       }
       return await response.json();
     } catch (error) {

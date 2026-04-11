@@ -38,10 +38,16 @@ const IncidentForm: React.FC<IncidentFormProps> = ({ client, onIncidentCreated, 
     <div style={styles.container}>
       <div style={styles.card}>
         <div style={styles.eyebrow}>Scenario Intake</div>
-        <h2 style={styles.title}>Incident Report Analyzer</h2>
+        <h2 style={styles.title}>Create A Causality Challenge</h2>
         <p style={styles.description}>
-          Paste your incident report or system log below. We'll analyze it and create an interactive scenario to help you practice incident response.
+          CREE checks whether actions reflect real cause-effect understanding, not random button clicking. Paste an incident and we will generate a hidden-dynamics episode.
         </p>
+
+        <div style={styles.quickFlow}>
+          <div style={styles.quickFlowItem}><strong>1.</strong> Paste incident text.</div>
+          <div style={styles.quickFlowItem}><strong>2.</strong> Run episode actions step-by-step.</div>
+          <div style={styles.quickFlowItem}><strong>3.</strong> Grade outcome and explain your decisions.</div>
+        </div>
 
         <form onSubmit={handleSubmit} style={styles.form}>
           <div style={styles.formMetaRow}>
@@ -69,7 +75,7 @@ const IncidentForm: React.FC<IncidentFormProps> = ({ client, onIncidentCreated, 
               ...(disabled || loading || !incidentText.trim() ? styles.buttonDisabled : {}),
             }}
           >
-            {loading ? 'Analyzing Report...' : 'Generate Training Scenario'}
+            {loading ? 'Analyzing Incident...' : 'Create Scenario'}
           </button>
         </form>
 
@@ -154,6 +160,20 @@ const styles: Record<string, React.CSSProperties> = {
   },
   form: {
     marginBottom: '24px',
+  },
+  quickFlow: {
+    display: 'grid',
+    gap: '6px',
+    marginBottom: '16px',
+    padding: '10px 12px',
+    borderRadius: '8px',
+    backgroundColor: 'rgba(7, 15, 30, 0.86)',
+    border: '1px solid rgba(94, 138, 188, 0.28)',
+  },
+  quickFlowItem: {
+    color: '#9db3cd',
+    fontSize: '12px',
+    lineHeight: 1.35,
   },
   formMetaRow: {
     display: 'flex',

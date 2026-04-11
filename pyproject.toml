@@ -10,13 +10,23 @@ readme = "README.md"
 requires-python = ">=3.10"
 dependencies = [
   "openenv-core>=0.2.0",
-  "fastapi",
-  "uvicorn",
-  "pydantic"
+  "fastapi>=0.104.1",
+  "uvicorn>=0.24.0",
+  "pydantic>=2.5.0",
+  "requests>=2.31.0",
+  "rich>=13.7.0",
+  "openai>=1.14.0",
+  "pyyaml>=6.0",
+  "python-dotenv>=1.0.0"
 ]
 
 [project.scripts]
 server = "server.app:main"
+
+[project.optional-dependencies]
+dev = [
+  "pytest>=8.0.0"
+]
 
 [tool.setuptools]
 packages = ["agent", "client", "env", "server", "tasks"]

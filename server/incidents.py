@@ -5,7 +5,6 @@ Takes raw incident reports and extracts signals to initialize
 environment conditions for realistic incident response training.
 """
 
-import re
 from typing import Dict, Any
 
 
@@ -97,10 +96,7 @@ class IncidentAnalyzer:
     @staticmethod
     def _has_keyword(text: str, keywords: list) -> bool:
         """Check if any keyword appears in text."""
-        for keyword in keywords:
-            if keyword in text:
-                return True
-        return False
+        return any(keyword in text for keyword in keywords)
 
     @staticmethod
     def _generate_summary(signals: Dict[str, bool], incident_text: str) -> str:
