@@ -1,10 +1,3 @@
----
-
-title: CREE Hackathon MVP
-sdk: docker
-app_port: 8000
---------------
-
 # CREE: Causal Reverse Engineering Engine
 
 Most AI agents can optimize reward. Very few can **understand why things happen**.
