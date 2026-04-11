@@ -87,16 +87,6 @@ openenv validate https://kr4ter-cree-sre.hf.space
 
 ---
 
-## What Judges Should Notice
-
-* **Novelty:** Hidden causal rules and delayed effects
-* **Technical depth:** Partially observable environment with non-linear transitions
-* **Utility:** Realistic incident-response rehearsal with grading
-* **Product quality:** Live dashboard, reproducible flows
-* **Scalability:** Extendable rule packs and scenarios
-
----
-
 ## How It Works
 
 1. Submit incident text (dashboard or API)
