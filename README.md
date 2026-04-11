@@ -104,7 +104,7 @@ This makes CREE useful as both:
 - Baseline inference runner for agentic evaluation
 - Docker + Hugging Face Spaces deployment
 
-## 60-Second Demo Script
+## 60-Second Demo 
 
 1. Paste a critical incident report.
 2. Show extracted signals and generated scenario severity.
